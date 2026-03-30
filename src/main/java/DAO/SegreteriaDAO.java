@@ -165,4 +165,22 @@ public class SegreteriaDAO {
             throw new PiscinaException("Errore nel recupero iscrizioni: " + e.getMessage());
         }
     }
-}
+
+        // 7. Aggiungi Recapito (chiamato subito dopo la registrazione cliente)
+        public void aggiungiRecapito(String cf, String tipo, String valore) throws PiscinaException {
+            String sql = "{call aggiungi_recapito(?, ?, ?)}";
+
+            try (Connection conn = DBManager.getConnection();
+                 CallableStatement stmt = conn.prepareCall(sql)) {
+
+                stmt.setString(1, cf);
+                stmt.setString(2, tipo); // La CLI passerà "cellulare" o "email" grazie alla nostra regex
+                stmt.setString(3, valore);
+
+                stmt.execute();
+
+            } catch (SQLException e) {
+                throw new PiscinaException("Errore durante il salvataggio del recapito: " + e.getMessage());
+            }
+        }
+    }

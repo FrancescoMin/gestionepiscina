@@ -47,30 +47,94 @@ public class MainCLI {
             switch (scelta) {
                 case "1":
                     System.out.println("\n--- INSERIMENTO NUOVO CLIENTE ---");
-                    System.out.print("Codice Fiscale (16 car): ");
-                    String cf = scanner.nextLine();
-                    System.out.print("Nome: ");
-                    String nome = scanner.nextLine();
-                    System.out.print("Cognome: ");
-                    String cognome = scanner.nextLine();
-                    System.out.print("Data Nascita (YYYY-MM-DD): ");
-                    String dataStr = scanner.nextLine();
-                    System.out.print("Via: ");
-                    String via = scanner.nextLine();
-                    System.out.print("Città: ");
-                    String citta = scanner.nextLine();
-                    System.out.print("CAP: ");
-                    String cap = scanner.nextLine();
-                    System.out.print("Codice Badge: ");
-                    String badge = scanner.nextLine();
 
+                    // 1. Validazione CF
+                    String cf;
+                    while (true) {
+                        System.out.print("Codice Fiscale (16 car): ");
+                        cf = scanner.nextLine().trim().toUpperCase();
+                        if (cf.length() == 16) break; // Se è giusto, esce dal ciclo e prosegue
+                        System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri. Riprova.");
+                    }
+
+                    // 2. Validazione Nome
+                    String nome;
+                    while (true) {
+                        System.out.print("Nome: ");
+                        nome = scanner.nextLine().trim();
+                        if (!nome.isEmpty()) break;
+                        System.out.println("❌ ERRORE: Il nome è obbligatorio.");
+                    }
+
+                    // 3. Validazione Cognome
+                    String cognome;
+                    while (true) {
+                        System.out.print("Cognome: ");
+                        cognome = scanner.nextLine().trim();
+                        if (!cognome.isEmpty()) break;
+                        System.out.println("❌ ERRORE: Il cognome è obbligatorio.");
+                    }
+
+                    // 4. Validazione Data di Nascita (con try-catch incorporato)
+                    java.sql.Date dataNascita = null;
+                    while (dataNascita == null) {
+                        System.out.print("Data Nascita (YYYY-MM-DD): ");
+                        String dataStr = scanner.nextLine().trim();
+                        try {
+                            dataNascita = java.sql.Date.valueOf(dataStr);
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("❌ ERRORE: Formato data non valido. Riprova usando YYYY-MM-DD.");
+                        }
+                    }
+
+                    // 5. Input semplici (Via e Città)
+                    System.out.print("Via: ");
+                    String via = scanner.nextLine().trim();
+                    System.out.print("Città: ");
+                    String citta = scanner.nextLine().trim();
+
+                    // 6. Validazione CAP
+                    String cap;
+                    while (true) {
+                        System.out.print("CAP (5 cifre): ");
+                        cap = scanner.nextLine().trim();
+                        if (cap.matches("\\d{5}")) break;
+                        System.out.println("❌ ERRORE: Il CAP deve essere composto esattamente da 5 numeri.");
+                    }
+
+                    System.out.print("Codice Badge: ");
+                    String badge = scanner.nextLine().trim();
+
+                    // 7. Validazione Recapito (Telefono o Email)
+                    String valoreRecapito;
+                    String tipoRecapito = "";
+                    while (true) {
+                        System.out.print("Inserisci un Cellulare (es. +39333...) o un'Email (Lascia vuoto per saltare): ");
+                        valoreRecapito = scanner.nextLine().trim();
+
+                        if (valoreRecapito.isEmpty()) {
+                            break; // Se lascia vuoto, va bene, saltiamo l'inserimento del recapito
+                        } else if (valoreRecapito.matches("^\\+?[0-9\\s]+$")) {
+                            tipoRecapito = "cellulare";
+                            break;
+                        } else if (valoreRecapito.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                            tipoRecapito = "email";
+                            break;
+                        } else {
+                            System.out.println("❌ ERRORE: Formato non valido. Inserisci un numero o un'email corretta.");
+                        }
+                    }
+
+                    // --- CHIAMATA AL DATABASE ---
                     try {
-                        java.sql.Date dataNascita = java.sql.Date.valueOf(dataStr);
                         dao.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap, badge);
+                        if (!valoreRecapito.isEmpty()) {
+                            dao.aggiungiRecapito(cf, tipoRecapito, valoreRecapito);
+                        }
                         System.out.println("✅ SUCCESSO: Cliente registrato correttamente!");
-                    } catch (IllegalArgumentException e) {
-                        System.out.println("❌ ERRORE INPUT: Formato data non valido (usa YYYY-MM-DD).");
-                    } catch (PiscinaException e) {
+
+                    } catch (exceptions.PiscinaException e) {
+                        // Questo scatta solo se c'è un errore logico nel DB (es. CF già esistente)
                         System.out.println("❌ IMPOSSIBILE REGISTRARE: " + e.getMessage());
                     }
                     break;
@@ -78,7 +142,11 @@ public class MainCLI {
                 case "2":
                     System.out.println("\n--- ISCRIZIONE CLIENTE A UN CORSO ---");
                     System.out.print("Codice Fiscale Cliente: ");
-                    String cfIscrizione = scanner.nextLine();
+                    String cfIscrizione = scanner.nextLine().trim().toUpperCase();
+                    if (cfIscrizione.length() != 16) {
+                        System.out.println("❌ ERRORE INPUT: Il Codice Fiscale deve essere di 16 caratteri.");
+                        continue;
+                    }
                     System.out.print("Nome Corso (es. Acquagym): ");
                     String corso = scanner.nextLine();
                     System.out.print("Data Inizio (YYYY-MM-DD): ");
@@ -98,8 +166,11 @@ public class MainCLI {
                 case "3":
                     System.out.println("\n--- REGISTRAZIONE ACCESSO ---");
                     System.out.print("Passa il badge (Inserisci CF): ");
-                    String cfAccesso = scanner.nextLine();
-
+                    String cfAccesso = scanner.nextLine().trim().toUpperCase();
+                    if (cfAccesso.length() != 16) {
+                        System.out.println("❌ ERRORE INPUT: Badge non valido (CF errato).");
+                        continue;
+                    }
                     try {
                         dao.registraAccesso(cfAccesso);
                         System.out.println("✅ SUCCESSO: Accesso consentito! Il tornello è sbloccato.");
@@ -110,23 +181,43 @@ public class MainCLI {
 
                 case "4":
                     System.out.println("\n--- GENERAZIONE REPORT PRESENZE ---");
-                    System.out.print("Data Inizio (YYYY-MM-DD): ");
-                    String repInizioStr = scanner.nextLine();
-                    System.out.print("Data Fine (YYYY-MM-DD): ");
-                    String repFineStr = scanner.nextLine();
+                    java.sql.Date dataInizioRep = null;
+                    java.sql.Date dataFineRep = null;
 
-                    try {
-                        java.sql.Date dataInizioRep = java.sql.Date.valueOf(repInizioStr);
-                        java.sql.Date dataFineRep = java.sql.Date.valueOf(repFineStr);
-
-                        if (dataFineRep.before(dataInizioRep)) {
-                            System.out.println("❌ ERRORE: La data di fine precede la data di inizio.");
-                        } else {
-                            dao.generaReportPresenze(dataInizioRep, dataFineRep);
+                    // 1. Ciclo per la validazione della Data Inizio
+                    while (true) {
+                        System.out.print("Data Inizio (YYYY-MM-DD): ");
+                        String repInizioStr = scanner.nextLine().trim();
+                        try {
+                            dataInizioRep = java.sql.Date.valueOf(repInizioStr);
+                            break; // Formato corretto, esce dal ciclo
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("❌ ERRORE: Formato data non valido. Riprova usando YYYY-MM-DD.");
                         }
-                    } catch (IllegalArgumentException e) {
-                        System.out.println("❌ ERRORE INPUT: Formato data non valido.");
-                    } catch (PiscinaException e) {
+                    }
+
+                    // 2. Ciclo per la validazione della Data Fine (con controllo logico)
+                    while (true) {
+                        System.out.print("Data Fine (YYYY-MM-DD): ");
+                        String repFineStr = scanner.nextLine().trim();
+                        try {
+                            dataFineRep = java.sql.Date.valueOf(repFineStr);
+
+                            // Controllo: la fine non può venire prima dell'inizio
+                            if (dataFineRep.before(dataInizioRep)) {
+                                System.out.println("❌ ERRORE: La data di fine non può essere precedente a quella di inizio (" + dataInizioRep + "). Riprova.");
+                            } else {
+                                break; // Formato e logica corretti, esce dal ciclo!
+                            }
+                        } catch (IllegalArgumentException e) {
+                            System.out.println("❌ ERRORE: Formato data non valido. Riprova usando YYYY-MM-DD.");
+                        }
+                    }
+
+                    // --- CHIAMATA AL DATABASE ---
+                    try {
+                        dao.generaReportPresenze(dataInizioRep, dataFineRep);
+                    } catch (exceptions.PiscinaException e) {
                         System.out.println("❌ ERRORE REPORT: " + e.getMessage());
                     }
                     break;
@@ -142,8 +233,11 @@ public class MainCLI {
                 case "6":
                     System.out.println("\n--- RICERCA ISCRIZIONI ATTIVE ---");
                     System.out.print("Inserisci il Codice Fiscale del cliente: ");
-                    String cfRicerca = scanner.nextLine();
-
+                    String cfRicerca = scanner.nextLine().trim().toUpperCase();
+                    if (cfRicerca.length() != 16) {
+                        System.out.println("❌ ERRORE INPUT: Il Codice Fiscale deve essere di 16 caratteri.");
+                        continue;
+                    }
                     try {
                         dao.visualizzaIscrizioniCliente(cfRicerca);
                     } catch (PiscinaException e) {
