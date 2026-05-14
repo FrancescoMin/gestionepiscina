@@ -3,13 +3,15 @@ package DAO; // Usa il tuo package
 import exceptions.PiscinaException; // Importa l'eccezione
 import java.sql.*;
 
+import static DAO.DBManager.getConnection;
+
 public class SegreteriaDAO {
 
     // 0. Login
     public boolean login(String username, String password) throws PiscinaException {
         String sql = "{call login(?, ?, ?)}";
 
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
 
             stmt.setString(1, username);
@@ -32,7 +34,7 @@ public class SegreteriaDAO {
     public void registraCliente(String cf, String nome, String cognome, Date dataNascita,
                                 String via, String citta, String cap, String codBadge) throws PiscinaException {
         String sql = "{call registrazione_cliente(?, ?, ?, ?, ?, ?, ?, ?)}";
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, cf);
             stmt.setString(2, nome);
@@ -52,7 +54,7 @@ public class SegreteriaDAO {
     // 2. Iscrivi Cliente
     public void iscriviCliente(String cf, String nomeCorso, Date dataInizio) throws PiscinaException {
         String sql = "{call iscrivi_cliente(?, ?, ?)}";
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, cf);
             stmt.setString(2, nomeCorso);
@@ -66,7 +68,7 @@ public class SegreteriaDAO {
     // 3. Registra Accesso (Tornello)
     public void registraAccesso(String cf) throws PiscinaException {
         String sql = "{call registra_accesso(?)}";
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, cf);
             stmt.execute();
@@ -78,7 +80,7 @@ public class SegreteriaDAO {
     // 4. Genera Report
     public void generaReportPresenze(Date dataInizio, Date dataFine) throws PiscinaException {
         String sql = "{call genera_report_presenze(?, ?)}";
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setDate(1, dataInizio);
             stmt.setDate(2, dataFine);
@@ -105,10 +107,9 @@ public class SegreteriaDAO {
 
     // 5. Visualizza Corsi (Tramite Stored Procedure)
     public void visualizzaCorsiDisponibili() throws PiscinaException {
-        // Ora chiamiamo semplicemente la procedura, senza scrivere query complesse in Java!
         String sql = "{call visualizza_corsi_disponibili()}";
 
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql);
              ResultSet rs = stmt.executeQuery()) {
 
@@ -141,7 +142,7 @@ public class SegreteriaDAO {
         // Chiamiamo la procedura passando il parametro
         String sql = "{call visualizza_iscrizioni_cliente(?)}";
 
-        try (Connection conn = DBManager.getConnection();
+        try (Connection conn = getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
 
             stmt.setString(1, cf);
@@ -170,7 +171,7 @@ public class SegreteriaDAO {
         public void aggiungiRecapito(String cf, String tipo, String valore) throws PiscinaException {
             String sql = "{call aggiungi_recapito(?, ?, ?)}";
 
-            try (Connection conn = DBManager.getConnection();
+            try (Connection conn = getConnection();
                  CallableStatement stmt = conn.prepareCall(sql)) {
 
                 stmt.setString(1, cf);
@@ -183,4 +184,23 @@ public class SegreteriaDAO {
                 throw new PiscinaException("Errore durante il salvataggio del recapito: " + e.getMessage());
             }
         }
+
+        // 8. Aggiungi Corso (chiamato da un ipotetico admin, ma lo mettiamo qui per semplicità)
+    public void aggiungiCorso(String nome, String desc, double costo, int min, int max) throws PiscinaException {
+        String sql = "{call inserisci_nuovo_corso(?, ?, ?, ?, ?)}";
+        try (Connection conn = getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, nome);
+            stmt.setString(2, desc);
+            stmt.setDouble(3, costo);
+            stmt.setInt(4, min);
+            stmt.setInt(5, max);
+            stmt.execute();
+
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore inserimento corso: " + e.getMessage());
+        }
+    }
+
     }

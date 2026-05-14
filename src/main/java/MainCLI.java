@@ -2,6 +2,7 @@ import DAO.SegreteriaDAO;
 import exceptions.PiscinaException;
 import java.util.Scanner;
 
+
 public class MainCLI {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -40,6 +41,8 @@ public class MainCLI {
             System.out.println("4. Genera Report Presenze");
             System.out.println("5. Visualizza Corsi e Sessioni");
             System.out.println("6. Visualizza Iscrizioni Cliente");
+            System.out.println("7. Aggiungi nuovo recapito a cliente esistente");
+            System.out.println("8. Aggiungi nuovo corso");
             System.out.println("0. Esci");
             System.out.print("Scelta: ");
             String scelta = scanner.nextLine();
@@ -105,23 +108,36 @@ public class MainCLI {
                     System.out.print("Codice Badge: ");
                     String badge = scanner.nextLine().trim();
 
-                    // 7. Validazione Recapito (Telefono o Email)
+                    // 7. Validazione Recapito con distinzione Fisso/Cellulare/Email
                     String valoreRecapito;
                     String tipoRecapito = "";
                     while (true) {
-                        System.out.print("Inserisci un Cellulare (es. +39333...) o un'Email (Lascia vuoto per saltare): ");
+                        System.out.print("Inserisci Recapito (Cellulare, Fisso o Email) [Lascia vuoto per saltare]: ");
                         valoreRecapito = scanner.nextLine().trim();
 
-                        if (valoreRecapito.isEmpty()) {
-                            break; // Se lascia vuoto, va bene, saltiamo l'inserimento del recapito
-                        } else if (valoreRecapito.matches("^\\+?[0-9\\s]+$")) {
-                            tipoRecapito = "cellulare";
-                            break;
-                        } else if (valoreRecapito.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                        if (valoreRecapito.isEmpty()) break;
+
+                        // 1. Controllo EMAIL
+                        if (valoreRecapito.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
                             tipoRecapito = "email";
                             break;
-                        } else {
-                            System.out.println("❌ ERRORE: Formato non valido. Inserisci un numero o un'email corretta.");
+                        }
+                        // 2. Controllo NUMERI (Fisso o Cellulare)
+                        else if (valoreRecapito.matches("^\\+?[0-9\\s]+$")) {
+                            // Rimuoviamo il prefisso internazionale per il controllo iniziale
+                            String pulita = valoreRecapito.replace("+39", "").trim();
+
+                            if (pulita.startsWith("3")) {
+                                tipoRecapito = "cellulare";
+                            } else if (pulita.startsWith("0")) {
+                                tipoRecapito = "telefono"; // Fisso
+                            } else {
+                                tipoRecapito = "telefono"; // Default se non inizia con 0 o 3 (es. numeri verdi)
+                            }
+                            break;
+                        }
+                        else {
+                            System.out.println("❌ ERRORE: Formato non riconosciuto. Inserisci un numero valido o un'email.");
                         }
                     }
 
@@ -242,6 +258,99 @@ public class MainCLI {
                         dao.visualizzaIscrizioniCliente(cfRicerca);
                     } catch (PiscinaException e) {
                         System.out.println("❌ ERRORE DATABASE: " + e.getMessage());
+                    }
+                    break;
+
+                case "7":
+                    System.out.println("\n--- AGGIUNGI NUOVO RECAPITO ---");
+
+                    // 1. Validazione Codice Fiscale
+                    String cfRecapito;
+                    while (true) {
+                        System.out.print("Codice Fiscale del Cliente (16 car): ");
+                        cfRecapito = scanner.nextLine().trim().toUpperCase();
+                        if (cfRecapito.length() == 16) break;
+                        System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri. Riprova.");
+                    }
+
+                    // 2. Acquisizione e riconoscimento tipo recapito
+                    String valoreNuovoRecapito;
+                    String tipoNuovoRecapito = "";
+                    while (true) {
+                        System.out.print("Inserisci Recapito (Cellulare, Fisso o Email): ");
+                        valoreNuovoRecapito = scanner.nextLine().trim();
+
+                        if (valoreNuovoRecapito.isEmpty()) {
+                            System.out.println("❌ ERRORE: Il campo non può essere vuoto in questa operazione.");
+                            continue;
+                        }
+
+                        // Controllo EMAIL
+                        if (valoreNuovoRecapito.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
+                            tipoNuovoRecapito = "email";
+                            break;
+                        }
+                        // Controllo NUMERI (Fisso o Cellulare)
+                        else if (valoreNuovoRecapito.matches("^\\+?[0-9\\s]+$")) {
+                            // Rimuove l'eventuale prefisso per il controllo iniziale
+                            String pulita = valoreNuovoRecapito.replace("+39", "").trim();
+
+                            if (pulita.startsWith("3")) {
+                                tipoNuovoRecapito = "cellulare";
+                            } else {
+                                tipoNuovoRecapito = "telefono";
+                            }
+                            break;
+                        }
+                        else {
+                            System.out.println("❌ ERRORE: Formato non riconosciuto. Inserisci un numero valido o un'email.");
+                        }
+                    }
+
+                    // 3. Esecuzione tramite DAO
+                    try {
+                        dao.aggiungiRecapito(cfRecapito, tipoNuovoRecapito, valoreNuovoRecapito);
+                        System.out.println("✅ SUCCESSO: Recapito registrato correttamente per il cliente.");
+                    } catch (exceptions.PiscinaException e) {
+                        System.out.println("❌ ERRORE DURANTE L'INSERIMENTO: " + e.getMessage());
+                    }
+                    break;
+
+                case "8":
+                    System.out.println("\n--- INSERIMENTO NUOVO CORSO ---");
+                    System.out.print("Nome Corso: ");
+                    String nomeC = scanner.nextLine().trim();
+                    System.out.print("Descrizione: ");
+                    String descC = scanner.nextLine().trim();
+
+                    double costo = -1;
+                    while (costo < 0) {
+                        System.out.print("Costo Mensile (€): ");
+                        try {
+                            costo = Double.parseDouble(scanner.nextLine());
+                        } catch (NumberFormatException e) {
+                            System.out.println("❌ ERRORE: Inserisci un valore numerico valido.");
+                        }
+                    }
+
+                    int min = 0, max = 0;
+                    while (min <= 0 || max <= min) {
+                        try {
+                            System.out.print("Min Partecipanti: ");
+                            min = Integer.parseInt(scanner.nextLine());
+                            System.out.print("Max Partecipanti: ");
+                            max = Integer.parseInt(scanner.nextLine());
+                            if (max <= min) System.out.println("❌ ERRORE: Il massimo deve essere superiore al minimo.");
+                        } catch (NumberFormatException e) {
+                            System.out.println("❌ ERRORE: Inserisci numeri interi.");
+                        }
+                    }
+
+                    try {
+                        dao.aggiungiCorso(nomeC, descC, costo, min, max);
+                        System.out.println("✅ Corso aggiunto con successo!");
+                    } catch (PiscinaException e) {
+                        System.out.println("❌ " + e.getMessage());
                     }
                     break;
 
