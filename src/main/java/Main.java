@@ -1,6 +1,8 @@
 import view.MainCLI;
 
-void main() {
-    MainCLI app = new MainCLI();
-    app.avviaApp();
+public class Main {
+    public static void main(String[] args) {
+        MainCLI app = new MainCLI();
+        app.avviaApp();
+    }
 }

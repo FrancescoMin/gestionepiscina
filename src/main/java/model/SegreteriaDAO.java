@@ -5,10 +5,6 @@ import java.sql.*;
 
 public class SegreteriaDAO {
 
-//    private Connection getConnection() throws SQLException {
-//        // Inserire qui le credenziali effettive del database MySQL
-//        return DriverManager.getConnection("jdbc:mysql://localhost:3306/piscina", "root", "1234");
-//    }
 
     public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
         String sql = "{call registrazione_cliente(?, ?, ?, ?, ?, ?, ?, ?)}";
@@ -106,7 +102,6 @@ public class SegreteriaDAO {
                 System.out.printf("%-15s | %-17s | %-17s%n", "Data", "Accessi Effettivi", "Presenze Previste");
                 System.out.println("---------------------------------------------------------");
 
-               // System.out.println("\n--- RISULTATI REPORT PRESENZE ---");
                 boolean hasData = false;
                 while (rs.next()) {
                     hasData = true;

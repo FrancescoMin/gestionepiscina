@@ -12,6 +12,11 @@ public class DBManager {
     private static String user;
     private static String pass;
 
+    // Aggiunta del costruttore privato per nascondere quello pubblico implicito
+    private DBManager() {
+        throw new IllegalStateException("Classe di utilità: non può essere istanziata.");
+    }
+
     // Il blocco statico inizializza i parametri una sola volta all'avvio dell'applicazione
     static {
         Properties props = new Properties();
