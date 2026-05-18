@@ -10,10 +10,11 @@ public class SegreteriaDAO {
         return DriverManager.getConnection("jdbc:mysql://localhost:3306/piscina", "root", "1234");
     }
 
-    public void registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap, String badge) throws PiscinaException {
+    public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
         String sql = "{call registrazione_cliente(?, ?, ?, ?, ?, ?, ?, ?)}";
         try (Connection conn = DBManager.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
+
             stmt.setString(1, cf);
             stmt.setString(2, nome);
             stmt.setString(3, cognome);
@@ -21,8 +22,15 @@ public class SegreteriaDAO {
             stmt.setString(5, via);
             stmt.setString(6, citta);
             stmt.setString(7, cap);
-            stmt.setString(8, badge);
+
+            // Registrazione del parametro OUT per il badge
+            stmt.registerOutParameter(8, java.sql.Types.VARCHAR);
+
             stmt.execute();
+
+            // Recupero del valore calcolato dal database
+            return stmt.getString(8);
+
         } catch (SQLException e) {
             throw new PiscinaException("Errore registrazione cliente: " + e.getMessage());
         }

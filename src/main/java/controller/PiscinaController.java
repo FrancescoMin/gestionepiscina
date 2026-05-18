@@ -10,8 +10,8 @@ public class PiscinaController {
         this.dao = new SegreteriaDAO();
     }
 
-    public void registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap, String badge) throws PiscinaException {
-        dao.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap, badge);
+    public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
+        return dao.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap);
     }
 
     public void aggiungiRecapito(String cf, String tipo, String valore) throws PiscinaException {

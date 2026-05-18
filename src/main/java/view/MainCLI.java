@@ -3,6 +3,7 @@ package view;
 import controller.PiscinaController;
 import exceptions.PiscinaException;
 import java.util.Scanner;
+import java.util.List;
 
 public class MainCLI {
     private PiscinaController controller;
@@ -97,18 +98,37 @@ public class MainCLI {
     }
 
     // ==========================================
+    // METODI DI UTILITA' (DRY Principle)
+    // ==========================================
+
+    private String leggiCodiceFiscale(String prompt) {
+        String cf;
+        while (true) {
+            System.out.print(prompt);
+            cf = scanner.nextLine().trim().toUpperCase();
+            if (cf.length() == 16) return cf;
+            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
+        }
+    }
+
+    private java.sql.Date leggiData(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            try {
+                return java.sql.Date.valueOf(scanner.nextLine().trim());
+            } catch (IllegalArgumentException e) {
+                System.out.println("❌ ERRORE: Formato data non valido. Usare YYYY-MM-DD.");
+            }
+        }
+    }
+
+    // ==========================================
     // METODI OPERATIVI - MENU PRINCIPALE
     // ==========================================
 
     private void gestisciAccesso() {
         System.out.println("\n--- REGISTRAZIONE ACCESSO ---");
-        String cf;
-        while (true) {
-            System.out.print("Codice Fiscale (16 car): ");
-            cf = scanner.nextLine().trim().toUpperCase();
-            if (cf.length() == 16) break;
-            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
-        }
+        String cf = leggiCodiceFiscale("Codice Fiscale (16 car): ");
 
         try {
             controller.registraAccesso(cf);
@@ -120,26 +140,12 @@ public class MainCLI {
 
     private void gestisciIscrizione() {
         System.out.println("\n--- ISCRIZIONE CORSO ---");
-        String cf;
-        while (true) {
-            System.out.print("Codice Fiscale Cliente (16 car): ");
-            cf = scanner.nextLine().trim().toUpperCase();
-            if (cf.length() == 16) break;
-            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
-        }
+        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
 
         System.out.print("Nome del Corso: ");
         String corso = scanner.nextLine().trim();
 
-        java.sql.Date dataInizio = null;
-        while (dataInizio == null) {
-            System.out.print("Data Inizio (YYYY-MM-DD): ");
-            try {
-                dataInizio = java.sql.Date.valueOf(scanner.nextLine().trim());
-            } catch (IllegalArgumentException e) {
-                System.out.println("❌ ERRORE: Formato data non valido.");
-            }
-        }
+        java.sql.Date dataInizio = leggiData("Data Inizio (YYYY-MM-DD): ");
 
         try {
             controller.iscriviCliente(cf, corso, dataInizio);
@@ -151,29 +157,15 @@ public class MainCLI {
 
     private void generaReportPresenze() {
         System.out.println("\n--- REPORTISTICA PRESENZE ---");
-        java.sql.Date dataInizio = null;
+        java.sql.Date dataInizio = leggiData("Data Inizio Periodo (YYYY-MM-DD): ");
         java.sql.Date dataFine = null;
 
-        while (dataInizio == null) {
-            System.out.print("Data Inizio Periodo (YYYY-MM-DD): ");
-            try {
-                dataInizio = java.sql.Date.valueOf(scanner.nextLine().trim());
-            } catch (IllegalArgumentException e) {
-                System.out.println("❌ ERRORE: Formato data non valido.");
-            }
-        }
-
         while (dataFine == null) {
-            System.out.print("Data Fine Periodo (YYYY-MM-DD): ");
-            try {
-                java.sql.Date tempDate = java.sql.Date.valueOf(scanner.nextLine().trim());
-                if (tempDate.before(dataInizio)) {
-                    System.out.println("❌ ERRORE: La data di fine non può essere precedente a quella di inizio.");
-                } else {
-                    dataFine = tempDate;
-                }
-            } catch (IllegalArgumentException e) {
-                System.out.println("❌ ERRORE: Formato data non valido.");
+            java.sql.Date tempDate = leggiData("Data Fine Periodo (YYYY-MM-DD): ");
+            if (tempDate.before(dataInizio)) {
+                System.out.println("❌ ERRORE: La data di fine non può essere precedente a quella di inizio.");
+            } else {
+                dataFine = tempDate;
             }
         }
 
@@ -191,13 +183,7 @@ public class MainCLI {
     private void registraNuovoCliente() {
         System.out.println("\n--- INSERIMENTO NUOVO CLIENTE ---");
 
-        String cf;
-        while (true) {
-            System.out.print("Codice Fiscale (16 car): ");
-            cf = scanner.nextLine().trim().toUpperCase();
-            if (cf.length() == 16) break;
-            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
-        }
+        String cf = leggiCodiceFiscale("Codice Fiscale (16 car): ");
 
         String nome;
         while (true) {
@@ -215,15 +201,7 @@ public class MainCLI {
             System.out.println("❌ ERRORE: Il cognome è obbligatorio.");
         }
 
-        java.sql.Date dataNascita = null;
-        while (dataNascita == null) {
-            System.out.print("Data Nascita (YYYY-MM-DD): ");
-            try {
-                dataNascita = java.sql.Date.valueOf(scanner.nextLine().trim());
-            } catch (IllegalArgumentException e) {
-                System.out.println("❌ ERRORE: Formato data non valido.");
-            }
-        }
+        java.sql.Date dataNascita = leggiData("Data Nascita (YYYY-MM-DD): ");
 
         System.out.print("Via: ");
         String via = scanner.nextLine().trim();
@@ -239,8 +217,8 @@ public class MainCLI {
             System.out.println("❌ ERRORE: Il CAP deve contenere esattamente 5 numeri.");
         }
 
-        System.out.print("Codice Badge: ");
-        String badge = scanner.nextLine().trim();
+        //System.out.print("Codice Badge: ");
+        //String badge = scanner.nextLine().trim();
 
         String valoreRecapito = "";
         String tipoRecapito = "";
@@ -263,8 +241,12 @@ public class MainCLI {
         }
 
         try {
-            controller.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap, badge);
-            System.out.println("✅ SUCCESSO: Cliente registrato.");
+            // Chiamata al controller e recupero del badge generato automaticamente
+            String badgeAssegnato = controller.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap);
+
+            System.out.println("✅ SUCCESSO: Cliente registrato correttamente.");
+            System.out.println("💳 BADGE ASSEGNATO: " + badgeAssegnato);
+
             if (!valoreRecapito.isEmpty()) {
                 controller.aggiungiRecapito(cf, tipoRecapito, valoreRecapito);
                 System.out.println("✅ Recapito salvato.");
@@ -276,13 +258,7 @@ public class MainCLI {
 
     private void aggiungiRecapitoAggiuntivo() {
         System.out.println("\n--- AGGIUNGI NUOVO RECAPITO ---");
-        String cf;
-        while (true) {
-            System.out.print("Codice Fiscale Cliente (16 car): ");
-            cf = scanner.nextLine().trim().toUpperCase();
-            if (cf.length() == 16) break;
-            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
-        }
+        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
 
         String valore, tipo = "";
         while (true) {
@@ -312,17 +288,10 @@ public class MainCLI {
 
     private void proceduraModificaRecapito() {
         System.out.println("\n--- MODIFICA RECAPITO ---");
-        String cf;
-        while (true) {
-            System.out.print("Codice Fiscale Cliente (16 car): ");
-            cf = scanner.nextLine().trim().toUpperCase();
-            if (cf.length() == 16) break;
-            System.out.println("❌ ERRORE: Il Codice Fiscale deve essere di 16 caratteri.");
-        }
+        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
 
         try {
-            // Recupero ed esposizione dei recapiti correnti
-            java.util.List<String[]> recapitiAttuali = controller.ottieniRecapitiCliente(cf);
+            List<String[]> recapitiAttuali = controller.ottieniRecapitiCliente(cf);
 
             if (recapitiAttuali.isEmpty()) {
                 System.out.println("⚠️ Nessun recapito registrato per questo cliente. Impossibile procedere con modifiche.");
@@ -330,8 +299,7 @@ public class MainCLI {
             }
 
             System.out.println("\n[Recapiti attualmente associati al cliente]");
-            for (int i = 0; i < recapitiAttuali.size(); i++) {
-                String[] item = recapitiAttuali.get(i);
+            for (String[] item : recapitiAttuali) {
                 System.out.println("  -> Tipo: " + item[0] + " | Valore: " + item[1]);
             }
             System.out.println();
