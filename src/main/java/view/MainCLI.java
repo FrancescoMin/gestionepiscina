@@ -217,9 +217,6 @@ public class MainCLI {
             System.out.println("❌ ERRORE: Il CAP deve contenere esattamente 5 numeri.");
         }
 
-        //System.out.print("Codice Badge: ");
-        //String badge = scanner.nextLine().trim();
-
         String valoreRecapito = "";
         String tipoRecapito = "";
         while (true) {

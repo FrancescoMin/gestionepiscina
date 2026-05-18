@@ -5,10 +5,10 @@ import java.sql.*;
 
 public class SegreteriaDAO {
 
-    private Connection getConnection() throws SQLException {
-        // Inserire qui le credenziali effettive del database MySQL
-        return DriverManager.getConnection("jdbc:mysql://localhost:3306/piscina", "root", "1234");
-    }
+//    private Connection getConnection() throws SQLException {
+//        // Inserire qui le credenziali effettive del database MySQL
+//        return DriverManager.getConnection("jdbc:mysql://localhost:3306/piscina", "root", "1234");
+//    }
 
     public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
         String sql = "{call registrazione_cliente(?, ?, ?, ?, ?, ?, ?, ?)}";
@@ -81,7 +81,7 @@ public class SegreteriaDAO {
 
     public void registraAccesso(String cf) throws PiscinaException {
         String sql = "{call registra_accesso(?)}";
-        try (Connection conn = getConnection();
+        try (Connection conn = DBManager.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, cf);
             stmt.execute();
