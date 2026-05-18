@@ -161,7 +161,8 @@ public class MainCLI {
      * @return Array di String [tipo, valore]. Array vuoto se saltato.
      */
     private String[] leggiRecapito(String promptTest, boolean allowEmpty) {
-        String valore, tipo;
+        String valore;
+        String tipo;
         while (true) {
             System.out.print(promptTest);
             valore = scanner.nextLine().trim();
