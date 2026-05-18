@@ -36,3 +36,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Credenziali e Configurazioni Locali ###
+src/main/resources/config.properties
