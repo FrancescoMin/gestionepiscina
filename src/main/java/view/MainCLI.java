@@ -9,6 +9,20 @@ public class MainCLI {
     private PiscinaController controller;
     private Scanner scanner;
 
+    // ==========================================
+    // COSTANTI (Risoluzione SonarCloud: "Define a constant instead of duplicating...")
+    // ==========================================
+    private static final String PROMPT_SCELTA = "Scelta: ";
+    private static final String ERR_SCELTA_INVALIDA = "❌ Scelta non valida.";
+    private static final String PROMPT_CF_CLIENTE = "Codice Fiscale Cliente (16 car): ";
+
+    private static final String REGEX_EMAIL = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
+    private static final String REGEX_TELEFONO = "^\\+?[0-9\\s]+$";
+
+    private static final String TIPO_EMAIL = "email";
+    private static final String TIPO_TELEFONO = "telefono";
+    private static final String TIPO_CELLULARE = "cellulare";
+
     public MainCLI() {
         this.controller = new PiscinaController();
         this.scanner = new Scanner(System.in);
@@ -22,7 +36,7 @@ public class MainCLI {
             System.out.println("3. 📊 REPORTISTICA PRESENZE");
             System.out.println("4. ⚙️  CONFIGURAZIONE (Anagrafica e Corsi)");
             System.out.println("0. ESCI");
-            System.out.print("Scelta: ");
+            System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
@@ -35,7 +49,7 @@ public class MainCLI {
                     System.out.println("Chiusura del gestionale. Arrivederci.");
                     return;
                 default:
-                    System.out.println("❌ Scelta non valida.");
+                    System.out.println(ERR_SCELTA_INVALIDA);
             }
         }
     }
@@ -46,7 +60,7 @@ public class MainCLI {
             System.out.println("1. Gestione Anagrafica Clienti");
             System.out.println("2. Gestione Corsi");
             System.out.println("0. Torna al menu principale");
-            System.out.print("Scelta: ");
+            System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
@@ -54,7 +68,7 @@ public class MainCLI {
                 case "1": menuAnagrafica(); break;
                 case "2": menuCorsi(); break;
                 case "0": return;
-                default: System.out.println("❌ Scelta non valida.");
+                default: System.out.println(ERR_SCELTA_INVALIDA);
             }
         }
     }
@@ -66,7 +80,7 @@ public class MainCLI {
             System.out.println("2. Aggiungi Recapito a Cliente Esistente");
             System.out.println("3. Modifica Recapito Esistente");
             System.out.println("0. Torna indietro");
-            System.out.print("Scelta: ");
+            System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
@@ -75,7 +89,7 @@ public class MainCLI {
                 case "2": aggiungiRecapitoAggiuntivo(); break;
                 case "3": proceduraModificaRecapito(); break;
                 case "0": return;
-                default: System.out.println("❌ Scelta non valida.");
+                default: System.out.println(ERR_SCELTA_INVALIDA);
             }
         }
     }
@@ -85,20 +99,20 @@ public class MainCLI {
             System.out.println("\n--- GESTIONE CORSI ---");
             System.out.println("1. Aggiungi Nuovo Corso");
             System.out.println("0. Torna indietro");
-            System.out.print("Scelta: ");
+            System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
             switch (scelta) {
                 case "1": inserimentoNuovoCorso(); break;
                 case "0": return;
-                default: System.out.println("❌ Scelta non valida.");
+                default: System.out.println(ERR_SCELTA_INVALIDA);
             }
         }
     }
 
     // ==========================================
-    // METODI DI UTILITA' (DRY Principle)
+    // METODI DI UTILITA' (Risoluzione SonarCloud: Cognitive Complexity)
     // ==========================================
 
     private String leggiCodiceFiscale(String prompt) {
@@ -122,6 +136,54 @@ public class MainCLI {
         }
     }
 
+    private String leggiStringaObbligatoria(String prompt, String messaggioErrore) {
+        String input;
+        while (true) {
+            System.out.print(prompt);
+            input = scanner.nextLine().trim();
+            if (!input.isEmpty()) return input;
+            System.out.println(messaggioErrore);
+        }
+    }
+
+    private String leggiCAP() {
+        String cap;
+        while (true) {
+            System.out.print("CAP (5 cifre): ");
+            cap = scanner.nextLine().trim();
+            if (cap.matches("\\d{5}")) return cap;
+            System.out.println("❌ ERRORE: Il CAP deve contenere esattamente 5 numeri.");
+        }
+    }
+
+    /**
+     * Gestisce l'acquisizione validata di un recapito (Email, Fisso, Cellulare).
+     * @return Array di String [tipo, valore]. Array vuoto se saltato.
+     */
+    private String[] leggiRecapito(String promptTest, boolean allowEmpty) {
+        String valore, tipo;
+        while (true) {
+            System.out.print(promptTest);
+            valore = scanner.nextLine().trim();
+
+            if (valore.isEmpty()) {
+                if (allowEmpty) return new String[]{"", ""};
+                System.out.println("❌ Il campo non può essere vuoto.");
+                continue;
+            }
+
+            if (valore.matches(REGEX_EMAIL)) {
+                return new String[]{TIPO_EMAIL, valore};
+            } else if (valore.matches(REGEX_TELEFONO)) {
+                String pulita = valore.replace("+39", "").trim();
+                tipo = pulita.startsWith("3") ? TIPO_CELLULARE : TIPO_TELEFONO;
+                return new String[]{tipo, valore};
+            } else {
+                System.out.println("❌ ERRORE: Formato non valido. Inserire Numero o Email corretta.");
+            }
+        }
+    }
+
     // ==========================================
     // METODI OPERATIVI - MENU PRINCIPALE
     // ==========================================
@@ -140,11 +202,8 @@ public class MainCLI {
 
     private void gestisciIscrizione() {
         System.out.println("\n--- ISCRIZIONE CORSO ---");
-        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
-
-        System.out.print("Nome del Corso: ");
-        String corso = scanner.nextLine().trim();
-
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
+        String corso = leggiStringaObbligatoria("Nome del Corso: ", "❌ ERRORE: Il nome corso è obbligatorio.");
         java.sql.Date dataInizio = leggiData("Data Inizio (YYYY-MM-DD): ");
 
         try {
@@ -184,61 +243,23 @@ public class MainCLI {
         System.out.println("\n--- INSERIMENTO NUOVO CLIENTE ---");
 
         String cf = leggiCodiceFiscale("Codice Fiscale (16 car): ");
-
-        String nome;
-        while (true) {
-            System.out.print("Nome: ");
-            nome = scanner.nextLine().trim();
-            if (!nome.isEmpty()) break;
-            System.out.println("❌ ERRORE: Il nome è obbligatorio.");
-        }
-
-        String cognome;
-        while (true) {
-            System.out.print("Cognome: ");
-            cognome = scanner.nextLine().trim();
-            if (!cognome.isEmpty()) break;
-            System.out.println("❌ ERRORE: Il cognome è obbligatorio.");
-        }
-
+        String nome = leggiStringaObbligatoria("Nome: ", "❌ ERRORE: Il nome è obbligatorio.");
+        String cognome = leggiStringaObbligatoria("Cognome: ", "❌ ERRORE: Il cognome è obbligatorio.");
         java.sql.Date dataNascita = leggiData("Data Nascita (YYYY-MM-DD): ");
 
         System.out.print("Via: ");
         String via = scanner.nextLine().trim();
-
         System.out.print("Città: ");
         String citta = scanner.nextLine().trim();
 
-        String cap;
-        while (true) {
-            System.out.print("CAP (5 cifre): ");
-            cap = scanner.nextLine().trim();
-            if (cap.matches("\\d{5}")) break;
-            System.out.println("❌ ERRORE: Il CAP deve contenere esattamente 5 numeri.");
-        }
+        String cap = leggiCAP();
 
-        String valoreRecapito = "";
-        String tipoRecapito = "";
-        while (true) {
-            System.out.print("Inserisci Recapito (Cellulare, Fisso, Email) [Vuoto per saltare]: ");
-            valoreRecapito = scanner.nextLine().trim();
-
-            if (valoreRecapito.isEmpty()) break;
-
-            if (valoreRecapito.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-                tipoRecapito = "email";
-                break;
-            } else if (valoreRecapito.matches("^\\+?[0-9\\s]+$")) {
-                String pulita = valoreRecapito.replace("+39", "").trim();
-                tipoRecapito = pulita.startsWith("3") ? "cellulare" : "telefono";
-                break;
-            } else {
-                System.out.println("❌ ERRORE: Formato non valido.");
-            }
-        }
+        // Utilizzo del nuovo metodo estratto per ridurre drasticamente la complessità cognitiva
+        String[] recapitoData = leggiRecapito("Inserisci Recapito (Cellulare, Fisso, Email) [Vuoto per saltare]: ", true);
+        String tipoRecapito = recapitoData[0];
+        String valoreRecapito = recapitoData[1];
 
         try {
-            // Chiamata al controller e recupero del badge generato automaticamente
             String badgeAssegnato = controller.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap);
 
             System.out.println("✅ SUCCESSO: Cliente registrato correttamente.");
@@ -255,28 +276,12 @@ public class MainCLI {
 
     private void aggiungiRecapitoAggiuntivo() {
         System.out.println("\n--- AGGIUNGI NUOVO RECAPITO ---");
-        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
 
-        String valore, tipo = "";
-        while (true) {
-            System.out.print("Inserisci Recapito: ");
-            valore = scanner.nextLine().trim();
-            if (valore.isEmpty()) {
-                System.out.println("❌ Il campo non può essere vuoto.");
-                continue;
-            }
-            if (valore.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-                tipo = "email"; break;
-            } else if (valore.matches("^\\+?[0-9\\s]+$")) {
-                String pulita = valore.replace("+39", "").trim();
-                tipo = pulita.startsWith("3") ? "cellulare" : "telefono";
-                break;
-            }
-            System.out.println("❌ Formato non valido.");
-        }
+        String[] recapitoData = leggiRecapito("Inserisci Recapito: ", false);
 
         try {
-            controller.aggiungiRecapito(cf, tipo, valore);
+            controller.aggiungiRecapito(cf, recapitoData[0], recapitoData[1]);
             System.out.println("✅ Recapito aggiunto correttamente.");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
@@ -285,7 +290,7 @@ public class MainCLI {
 
     private void proceduraModificaRecapito() {
         System.out.println("\n--- MODIFICA RECAPITO ---");
-        String cf = leggiCodiceFiscale("Codice Fiscale Cliente (16 car): ");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
 
         try {
             List<String[]> recapitiAttuali = controller.ottieniRecapitiCliente(cf);
@@ -306,26 +311,11 @@ public class MainCLI {
             return;
         }
 
-        System.out.print("Inserisci il VECCHIO recapito da cambiare (scrivi il valore esatto): ");
-        String vecchio = scanner.nextLine().trim();
-
-        String nuovo, tipo = "";
-        while (true) {
-            System.out.print("Inserisci il NUOVO recapito: ");
-            nuovo = scanner.nextLine().trim();
-            if (nuovo.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
-                tipo = "email";
-                break;
-            } else if (nuovo.matches("^\\+?[0-9\\s]+$")) {
-                String pulita = nuovo.replace("+39", "").trim();
-                tipo = pulita.startsWith("3") ? "cellulare" : "telefono";
-                break;
-            }
-            System.out.println("❌ Formato non valido.");
-        }
+        String vecchio = leggiStringaObbligatoria("Inserisci il VECCHIO recapito da cambiare (scrivi il valore esatto): ", "❌ Il campo non può essere vuoto.");
+        String[] recapitoData = leggiRecapito("Inserisci il NUOVO recapito: ", false);
 
         try {
-            controller.aggiornaRecapito(cf, vecchio, nuovo, tipo);
+            controller.aggiornaRecapito(cf, vecchio, recapitoData[1], recapitoData[0]);
             System.out.println("✅ Modifica completata con successo.");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
@@ -334,8 +324,8 @@ public class MainCLI {
 
     private void inserimentoNuovoCorso() {
         System.out.println("\n--- INSERIMENTO NUOVO CORSO ---");
-        System.out.print("Nome Corso: ");
-        String nomeC = scanner.nextLine().trim();
+        String nomeC = leggiStringaObbligatoria("Nome Corso: ", "❌ ERRORE: Il nome corso è obbligatorio.");
+
         System.out.print("Descrizione: ");
         String descC = scanner.nextLine().trim();
 
