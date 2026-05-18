@@ -340,7 +340,8 @@ public class MainCLI {
             }
         }
 
-        int min = 0, max = 0;
+        int min = 0;
+        int max = 0;
         while (min <= 0 || max <= min) {
             try {
                 System.out.print("Min Partecipanti: ");
