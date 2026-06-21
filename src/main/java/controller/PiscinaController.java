@@ -42,4 +42,11 @@ public class PiscinaController {
         return dao.getRecapitiCliente(cf);
     }
 
+    public void aggiornaDatiCliente(String cf, String via, String citta, String cap) throws PiscinaException {
+        dao.aggiornaDatiCliente(cf, via, citta, cap);
+    }
+
+    public void disattivaCliente(String cf) throws PiscinaException {
+        dao.disattivaCliente(cf);
+    }
 }

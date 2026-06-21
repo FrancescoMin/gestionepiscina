@@ -77,8 +77,10 @@ public class MainCLI {
         while (true) {
             System.out.println("\n--- GESTIONE ANAGRAFICA CLIENTI ---");
             System.out.println("1. Registra Nuovo Cliente");
-            System.out.println("2. Aggiungi Recapito a Cliente Esistente");
-            System.out.println("3. Modifica Recapito Esistente");
+            System.out.println("2. Modifica Dati Residenza Cliente"); // NUOVO
+            System.out.println("3. Aggiungi Recapito a Cliente Esistente");
+            System.out.println("4. Modifica Recapito Esistente");
+            System.out.println("5. Disattiva Cliente (Eliminazione)"); // NUOVO
             System.out.println("0. Torna indietro");
             System.out.print(PROMPT_SCELTA);
 
@@ -86,8 +88,10 @@ public class MainCLI {
 
             switch (scelta) {
                 case "1": registraNuovoCliente(); break;
-                case "2": aggiungiRecapitoAggiuntivo(); break;
-                case "3": proceduraModificaRecapito(); break;
+                case "2": modificaDatiCliente(); break; // NUOVO
+                case "3": aggiungiRecapitoAggiuntivo(); break;
+                case "4": proceduraModificaRecapito(); break;
+                case "5": disattivaCliente(); break; // NUOVO
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -361,6 +365,46 @@ public class MainCLI {
             System.out.println("✅ Corso aggiunto con successo!");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void modificaDatiCliente() {
+        System.out.println("\n--- MODIFICA DATI RESIDENZA CLIENTE ---");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
+
+        System.out.print("Nuova Via: ");
+        String via = scanner.nextLine().trim();
+
+        System.out.print("Nuova Città: ");
+        String citta = scanner.nextLine().trim();
+
+        String cap = leggiCAP();
+
+        try {
+            controller.aggiornaDatiCliente(cf, via, citta, cap);
+            System.out.println("✅ Modifica dati anagrafici completata con successo.");
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void disattivaCliente() {
+        System.out.println("\n--- DISATTIVA CLIENTE ---");
+        System.out.println("⚠️ Attenzione: Questa operazione disattiverà il profilo del cliente.");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
+
+        System.out.print("Sei sicuro di voler procedere? (S/N): ");
+        String conferma = scanner.nextLine().trim().toUpperCase();
+
+        if (conferma.equals("S")) {
+            try {
+                controller.disattivaCliente(cf);
+                System.out.println("✅ Cliente disattivato con successo.");
+            } catch (PiscinaException e) {
+                System.out.println("❌ " + e.getMessage());
+            }
+        } else {
+            System.out.println("Operazione annullata.");
         }
     }
 }

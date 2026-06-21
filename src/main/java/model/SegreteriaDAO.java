@@ -154,4 +154,38 @@ public class SegreteriaDAO {
         }
         return elencoRecapiti;
     }
+
+    public void aggiornaDatiCliente(String cf, String via, String citta, String cap) throws PiscinaException {
+        String sql = "{call modifica_cliente(?, ?, ?, ?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, cf);
+            stmt.setString(2, via);
+            stmt.setString(3, citta);
+            stmt.setString(4, cap);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Nessun cliente trovato con questo Codice Fiscale.");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante l'aggiornamento dei dati: " + e.getMessage());
+        }
+    }
+
+    public void disattivaCliente(String cf) throws PiscinaException {
+        String sql = "{call disattiva_cliente(?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, cf);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Nessun cliente trovato con questo Codice Fiscale.");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante la disattivazione del cliente: " + e.getMessage());
+        }
+    }
 }
