@@ -49,4 +49,13 @@ public class PiscinaController {
     public void disattivaCliente(String cf) throws PiscinaException {
         dao.disattivaCliente(cf);
     }
+
+    public java.util.List<String[]> ottieniOrariPiscina() throws PiscinaException {
+        return dao.getOrariPiscina();
+    }
+
+    public void aggiornaOrarioPiscina(String giorno, java.sql.Time apertura, java.sql.Time chiusura) throws PiscinaException {
+        dao.aggiornaOrario(giorno, apertura, chiusura);
+    }
+
 }

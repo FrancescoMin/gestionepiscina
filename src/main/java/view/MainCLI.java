@@ -59,6 +59,7 @@ public class MainCLI {
             System.out.println("\n--- AREA CONFIGURAZIONE ---");
             System.out.println("1. Gestione Anagrafica Clienti");
             System.out.println("2. Gestione Corsi");
+            System.out.println("3. Gestione Orari Piscina");
             System.out.println("0. Torna al menu principale");
             System.out.print(PROMPT_SCELTA);
 
@@ -67,6 +68,7 @@ public class MainCLI {
             switch (scelta) {
                 case "1": menuAnagrafica(); break;
                 case "2": menuCorsi(); break;
+                case "3": menuOrari(); break;
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -407,4 +409,72 @@ public class MainCLI {
             System.out.println("Operazione annullata.");
         }
     }
+
+    private java.sql.Time leggiOra(String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            try {
+                String input = scanner.nextLine().trim();
+                // JDBC richiede il formato HH:mm:ss. Se l'utente digita HH:mm, aggiungiamo i secondi.
+                if (input.length() == 5) {
+                    input += ":00";
+                }
+                return java.sql.Time.valueOf(input);
+            } catch (IllegalArgumentException e) {
+                System.out.println("❌ ERRORE: Formato ora non valido. Usare il formato HH:mm.");
+            }
+        }
+    }
+
+    private void menuOrari() {
+        while (true) {
+            System.out.println("\n--- GESTIONE ORARI PISCINA ---");
+            System.out.println("1. Visualizza Orari Attuali");
+            System.out.println("2. Modifica Orario di un Giorno");
+            System.out.println("0. Torna indietro");
+            System.out.print(PROMPT_SCELTA);
+
+            String scelta = scanner.nextLine().trim();
+
+            switch (scelta) {
+                case "1": visualizzaOrari(); break;
+                case "2": proceduraModificaOrario(); break;
+                case "0": return;
+                default: System.out.println(ERR_SCELTA_INVALIDA);
+            }
+        }
+    }
+
+    private void visualizzaOrari() {
+        System.out.println("\n--- ORARI SETTIMANALI DI APERTURA ---");
+        try {
+            List<String[]> orari = controller.ottieniOrariPiscina();
+            for (String[] o : orari) {
+                // Rimuove i millisecondi o i secondi in eccesso se presenti nel dump di MySQL
+                String apertura = o[1].substring(0, 5);
+                String chiusura = o[2].substring(0, 5);
+                System.out.printf("🔹 %-10s : %s - %s%n", o[0], apertura, chiusura);
+            }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void proceduraModificaOrario() {
+        visualizzaOrari(); // Mostra il palinsesto prima di chiedere modifiche
+
+        System.out.println("\n--- MODIFICA ORARIO GIORNALIERO ---");
+        String giorno = leggiStringaObbligatoria("Inserisci il giorno da modificare (es. 'Lunedì'): ", "❌ Il giorno è obbligatorio.");
+
+        java.sql.Time apertura = leggiOra("Nuovo orario di APERTURA (HH:mm): ");
+        java.sql.Time chiusura = leggiOra("Nuovo orario di CHIUSURA (HH:mm): ");
+
+        try {
+            controller.aggiornaOrarioPiscina(giorno, apertura, chiusura);
+            System.out.println("✅ Orario aggiornato con successo sul database.");
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
 }

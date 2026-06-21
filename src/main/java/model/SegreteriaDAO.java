@@ -188,4 +188,44 @@ public class SegreteriaDAO {
             throw new PiscinaException("Errore durante la disattivazione del cliente: " + e.getMessage());
         }
     }
+
+    public java.util.List<String[]> getOrariPiscina() throws PiscinaException {
+        java.util.List<String[]> orari = new java.util.ArrayList<>();
+        String sql = "SELECT GiornoSettimana, OrarioApertura, OrarioChiusura FROM OrarioPiscina";
+
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String[] riga = new String[3];
+                riga[0] = rs.getString("GiornoSettimana");
+                riga[1] = rs.getString("OrarioApertura");
+                riga[2] = rs.getString("OrarioChiusura");
+                orari.add(riga);
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore nel recupero degli orari: " + e.getMessage());
+        }
+        return orari;
+    }
+
+    public void aggiornaOrario(String giorno, java.sql.Time apertura, java.sql.Time chiusura) throws PiscinaException {
+        String sql = "{call modifica_orario(?, ?, ?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, giorno);
+            stmt.setTime(2, apertura);
+            stmt.setTime(3, chiusura);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Giorno non trovato. Verificare l'esattezza del nome (es. 'Lunedì').");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore nell'aggiornamento dell'orario: " + e.getMessage());
+        }
+    }
+
 }
