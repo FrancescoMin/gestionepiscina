@@ -32,7 +32,7 @@ public class MainCLI {
         while (true) {
             System.out.println("\n=== GESTIONALE PISCINA - MENU PRINCIPALE ===");
             System.out.println("1. 🟦 REGISTRAZIONE ACCESSO (Tornello)");
-            System.out.println("2. 📝 ISCRIVI CLIENTE A UN CORSO");
+            System.out.println("2. 📝 GESTIONE ISCRIZIONI");
             System.out.println("3. 📊 REPORTISTICA PRESENZE");
             System.out.println("4. ⚙️  CONFIGURAZIONE (Anagrafica e Corsi)");
             System.out.println("0. ESCI");
@@ -42,7 +42,7 @@ public class MainCLI {
 
             switch (scelta) {
                 case "1": gestisciAccesso(); break;
-                case "2": gestisciIscrizione(); break;
+                case "2": menuIscrizioni(); break;
                 case "3": generaReportPresenze(); break;
                 case "4": menuConfigurazione(); break;
                 case "0":
@@ -103,14 +103,22 @@ public class MainCLI {
     private void menuCorsi() {
         while (true) {
             System.out.println("\n--- GESTIONE CORSI ---");
-            System.out.println("1. Aggiungi Nuovo Corso");
+            System.out.println("1. Visualizza Corsi Attivi");
+            System.out.println("2. Aggiungi Nuovo Corso");
+            System.out.println("3. Modifica Dati Corso Esistente");
+            System.out.println("4. Sospendi/Elimina Corso");
+            System.out.println("5. Gestisci Calendario di un Corso");
             System.out.println("0. Torna indietro");
             System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
             switch (scelta) {
-                case "1": inserimentoNuovoCorso(); break;
+                case "1": visualizzaCorsi(); break;
+                case "2": inserimentoNuovoCorso(); break;
+                case "3": proceduraModificaCorso(); break;
+                case "4": disattivaCorso(); break;
+                case "5": gestisciCalendarioCorso(); break;
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -218,6 +226,45 @@ public class MainCLI {
             System.out.println("✅ Iscrizione effettuata con successo.");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void menuIscrizioni() {
+        while (true) {
+            System.out.println("\n--- GESTIONE ISCRIZIONI ---");
+            System.out.println("1. Iscrivi Cliente a un Corso");
+            System.out.println("2. Annulla Iscrizione Esistente (Disdetta)");
+            System.out.println("0. Torna al menu principale");
+            System.out.print(PROMPT_SCELTA);
+
+            String scelta = scanner.nextLine().trim();
+
+            switch (scelta) {
+                case "1": gestisciIscrizione(); break; // Il tuo metodo esistente
+                case "2": annullaIscrizione(); break;  // Il nuovo metodo
+                case "0": return;
+                default: System.out.println(ERR_SCELTA_INVALIDA);
+            }
+        }
+    }
+
+    private void annullaIscrizione() {
+        System.out.println("\n--- ANNULLA ISCRIZIONE CORSO ---");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
+        String corso = leggiStringaObbligatoria("Nome del Corso da cui disiscriversi: ", "❌ ERRORE: Il nome corso è obbligatorio.");
+
+        System.out.print("Sei sicuro di voler annullare l'iscrizione? (S/N): ");
+        String conferma = scanner.nextLine().trim().toUpperCase();
+
+        if (conferma.equals("S")) {
+            try {
+                controller.annullaIscrizione(cf, corso);
+                System.out.println("✅ Iscrizione annullata con successo.");
+            } catch (PiscinaException e) {
+                System.out.println("❌ " + e.getMessage());
+            }
+        } else {
+            System.out.println("Operazione annullata.");
         }
     }
 
@@ -329,47 +376,6 @@ public class MainCLI {
         }
     }
 
-    private void inserimentoNuovoCorso() {
-        System.out.println("\n--- INSERIMENTO NUOVO CORSO ---");
-        String nomeC = leggiStringaObbligatoria("Nome Corso: ", "❌ ERRORE: Il nome corso è obbligatorio.");
-
-        System.out.print("Descrizione: ");
-        String descC = scanner.nextLine().trim();
-
-        double costo = -1;
-        while (costo < 0) {
-            System.out.print("Costo Mensile (€): ");
-            try {
-                costo = Double.parseDouble(scanner.nextLine().trim());
-            } catch (NumberFormatException e) {
-                System.out.println("❌ ERRORE: Inserisci un valore numerico valido.");
-            }
-        }
-
-        int min = 0;
-        int max = 0;
-        while (min <= 0 || max <= min) {
-            try {
-                System.out.print("Min Partecipanti: ");
-                min = Integer.parseInt(scanner.nextLine().trim());
-                System.out.print("Max Partecipanti: ");
-                max = Integer.parseInt(scanner.nextLine().trim());
-                if (max <= min) {
-                    System.out.println("❌ ERRORE: Il massimo deve essere superiore al minimo.");
-                }
-            } catch (NumberFormatException e) {
-                System.out.println("❌ ERRORE: Inserisci numeri interi.");
-            }
-        }
-
-        try {
-            controller.aggiungiCorso(nomeC, descC, costo, min, max);
-            System.out.println("✅ Corso aggiunto con successo!");
-        } catch (PiscinaException e) {
-            System.out.println("❌ " + e.getMessage());
-        }
-    }
-
     private void modificaDatiCliente() {
         System.out.println("\n--- MODIFICA DATI RESIDENZA CLIENTE ---");
         String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
@@ -474,6 +480,215 @@ public class MainCLI {
             System.out.println("✅ Orario aggiornato con successo sul database.");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void visualizzaCorsi() {
+        System.out.println("\n--- ELENCO CORSI ATTIVI ---");
+        try {
+            java.util.List<String[]> corsi = controller.getCorsiAttivi();
+            if (corsi.isEmpty()) {
+                System.out.println("Nessun corso attualmente attivo.");
+                return;
+            }
+
+            for (String[] c : corsi) {
+                System.out.printf("🔹 Corso: %s | Costo: €%s | Min: %s | Max: %s | Vasca: %s%n   Descrizione: %s%n",
+                        c[0], c[2], c[3], c[4], c[5], c[1]);
+
+                // Integrazione: Recupero e stampa del calendario per questo specifico corso
+                java.util.List<String> orari = controller.getOrariDiUnCorso(c[0]);
+                if (orari.isEmpty()) {
+                    System.out.println("   [Nessun orario pianificato]");
+                } else {
+                    System.out.println("   Calendario:");
+                    for (String o : orari) {
+                        System.out.println("     - " + o);
+                    }
+                }
+                System.out.println(); // Riga vuota di spaziatura tra un corso e l'altro
+            }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void inserimentoNuovoCorso() {
+        System.out.println("\n--- INSERIMENTO NUOVO CORSO ---");
+        String nomeC = leggiStringaObbligatoria("Nome Corso: ", "❌ ERRORE: Il nome corso è obbligatorio.");
+
+        System.out.print("Descrizione: ");
+        String descC = scanner.nextLine().trim();
+
+        double costo = -1;
+        while (costo < 0) {
+            System.out.print("Costo Mensile (€): ");
+            try {
+                costo = Double.parseDouble(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci un valore numerico valido.");
+            }
+        }
+
+        int min = 0, max = 0;
+        while (min <= 0 || max <= min) {
+            try {
+                System.out.print("Min Partecipanti: ");
+                min = Integer.parseInt(scanner.nextLine().trim());
+                System.out.print("Max Partecipanti: ");
+                max = Integer.parseInt(scanner.nextLine().trim());
+                if (max <= min) {
+                    System.out.println("❌ ERRORE: Il massimo deve essere superiore al minimo.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci numeri interi.");
+            }
+        }
+
+        int vasca = 0;
+        while (vasca <= 0) {
+            System.out.print("Numero Vasca (1, 2, o 3): ");
+            try {
+                vasca = Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci un numero intero valido.");
+            }
+        }
+
+        try {
+            controller.aggiungiCorso(nomeC, descC, costo, min, max, vasca);
+            System.out.println("✅ Corso aggiunto con successo!");
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void proceduraModificaCorso() {
+        System.out.println("\n--- MODIFICA CORSO ---");
+        String nomeC = leggiStringaObbligatoria("Nome del corso da modificare: ", "❌ ERRORE: Il nome è obbligatorio.");
+
+        System.out.print("Nuova Descrizione: ");
+        String descC = scanner.nextLine().trim();
+
+        double costo = -1;
+        while (costo < 0) {
+            System.out.print("Nuovo Costo Mensile (€): ");
+            try {
+                costo = Double.parseDouble(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci un valore numerico valido.");
+            }
+        }
+
+        int min = 0, max = 0;
+        while (min <= 0 || max <= min) {
+            try {
+                System.out.print("Nuovo Min Partecipanti: ");
+                min = Integer.parseInt(scanner.nextLine().trim());
+                System.out.print("Nuovo Max Partecipanti: ");
+                max = Integer.parseInt(scanner.nextLine().trim());
+                if (max <= min) {
+                    System.out.println("❌ ERRORE: Il massimo deve essere superiore al minimo.");
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci numeri interi.");
+            }
+        }
+
+        int vasca = 0;
+        while (vasca <= 0) {
+            System.out.print("Nuovo Numero Vasca (1, 2, o 3): ");
+            try {
+                vasca = Integer.parseInt(scanner.nextLine().trim());
+            } catch (NumberFormatException e) {
+                System.out.println("❌ ERRORE: Inserisci un numero intero valido.");
+            }
+        }
+
+        try {
+            controller.aggiornaCorso(nomeC, descC, costo, min, max, vasca);
+            System.out.println("✅ Corso modificato con successo.");
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void disattivaCorso() {
+        System.out.println("\n--- SOSPENDI CORSO ---");
+        String nomeC = leggiStringaObbligatoria("Nome del corso da disattivare: ", "❌ ERRORE: Il nome è obbligatorio.");
+
+        System.out.print("Sei sicuro di voler procedere? (S/N): ");
+        String conferma = scanner.nextLine().trim().toUpperCase();
+
+        if (conferma.equals("S")) {
+            try {
+                controller.disattivaCorso(nomeC);
+                System.out.println("✅ Corso disattivato con successo. Non sarà più visibile tra quelli attivi.");
+            } catch (PiscinaException e) {
+                System.out.println("❌ " + e.getMessage());
+            }
+        } else {
+            System.out.println("Operazione annullata.");
+        }
+    }
+
+    private void gestisciCalendarioCorso() {
+        System.out.println("\n--- CALENDARIO CORSO ---");
+        String nomeCorso = leggiStringaObbligatoria("Inserisci il nome del corso: ", "Il nome è obbligatorio.");
+
+        try {
+            List<String> orariAttuali = controller.getOrariDiUnCorso(nomeCorso);
+            if (orariAttuali.isEmpty()) {
+                System.out.println("Nessun orario attualmente pianificato per questo corso.");
+            } else {
+                System.out.println("Orari attuali:");
+                for (String o : orariAttuali) {
+                    System.out.println("- " + o);
+                }
+            }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+            return;
+        }
+
+        System.out.print("\nVuoi aggiungere una nuova fascia oraria? (S/N): ");
+        if (scanner.nextLine().trim().equalsIgnoreCase("S")) {
+            String giorno = "";
+            java.util.List<String> giorniValidi = java.util.Arrays.asList(
+                    "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato", "Domenica",
+                    "Lunedi", "Martedi", "Mercoledi", "Giovedi", "Venerdi"
+            );
+
+            while (true) {
+                System.out.print("Giorno della settimana (es. Lunedì): ");
+                giorno = scanner.nextLine().trim();
+
+                if (giorno.length() > 0) {
+                    // Rende sempre maiuscola la prima lettera e minuscole le altre
+                    giorno = giorno.substring(0, 1).toUpperCase() + giorno.substring(1).toLowerCase();
+                }
+
+                if (giorniValidi.contains(giorno)) {
+                    // Corregge automaticamente eventuali assenze di accento
+                    if (giorno.equals("Lunedi")) giorno = "Lunedì";
+                    if (giorno.equals("Martedi")) giorno = "Martedì";
+                    if (giorno.equals("Mercoledi")) giorno = "Mercoledì";
+                    if (giorno.equals("Giovedi")) giorno = "Giovedì";
+                    if (giorno.equals("Venerdi")) giorno = "Venerdì";
+                    break; // Input valido, esce dal ciclo
+                } else {
+                    System.out.println("❌ ERRORE: Inserisci un giorno della settimana valido.");
+                }
+            }
+            java.sql.Time inizio = leggiOra("Ora Inizio (HH:mm): ");
+            java.sql.Time fine = leggiOra("Ora Fine (HH:mm): ");
+
+            try {
+                controller.aggiungiOrarioCorso(nomeCorso, giorno, inizio, fine);
+                System.out.println("✅ Orario inserito correttamente nel calendario.");
+            } catch (PiscinaException e) {
+                System.out.println("❌ " + e.getMessage());
+            }
         }
     }
 

@@ -75,6 +75,23 @@ public class SegreteriaDAO {
         }
     }
 
+    public void annullaIscrizione(String cf, String nomeCorso) throws PiscinaException {
+        String sql = "{call annulla_iscrizione(?, ?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, cf);
+            stmt.setString(2, nomeCorso);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Nessuna iscrizione trovata per questo cliente al corso specificato o corso non esistente.");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante l'annullamento dell'iscrizione: " + e.getMessage());
+        }
+    }
+
     public void registraAccesso(String cf) throws PiscinaException {
         String sql = "{call registra_accesso(?)}";
         try (Connection conn = DBManager.getConnection();
@@ -117,8 +134,8 @@ public class SegreteriaDAO {
         }
     }
 
-    public void aggiungiCorso(String nome, String desc, double costo, int min, int max) throws PiscinaException {
-        String sql = "{call inserisci_nuovo_corso(?, ?, ?, ?, ?)}";
+    public void aggiungiCorso(String nome, String desc, double costo, int min, int max, int numVasca) throws PiscinaException {
+        String sql = "{call inserisci_nuovo_corso(?, ?, ?, ?, ?, ?)}"; // Aggiunto un punto interrogativo
         try (Connection conn = DBManager.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
             stmt.setString(1, nome);
@@ -126,10 +143,54 @@ public class SegreteriaDAO {
             stmt.setDouble(3, costo);
             stmt.setInt(4, min);
             stmt.setInt(5, max);
+            stmt.setInt(6, numVasca); // Set del nuovo parametro
             stmt.execute();
         } catch (SQLException e) {
             throw new PiscinaException("Errore durante l'inserimento del corso: " + e.getMessage());
         }
+    }
+
+    public void aggiornaCorso(String nome, String desc, double costo, int min, int max, int numVasca) throws PiscinaException {
+        String sql = "{call modifica_corso(?, ?, ?, ?, ?, ?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+            stmt.setString(1, nome);
+            stmt.setString(2, desc);
+            stmt.setDouble(3, costo);
+            stmt.setInt(4, min);
+            stmt.setInt(5, max);
+            stmt.setInt(6, numVasca);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Nessun corso trovato con questo nome.");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante la modifica del corso: " + e.getMessage());
+        }
+    }
+
+    public java.util.List<String[]> getCorsiAttivi() throws PiscinaException {
+        java.util.List<String[]> corsi = new java.util.ArrayList<>();
+        String sql = "SELECT NomeCorso, Descrizione, CostoMensile, NumMinPartecipanti, NumMaxPartecipanti, NumVasca FROM Corso WHERE Attivo = TRUE";
+
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String[] corso = new String[6]; // Dimensione array aumentata a 6
+                corso[0] = rs.getString("NomeCorso");
+                corso[1] = rs.getString("Descrizione");
+                corso[2] = String.valueOf(rs.getDouble("CostoMensile"));
+                corso[3] = String.valueOf(rs.getInt("NumMinPartecipanti"));
+                corso[4] = String.valueOf(rs.getInt("NumMaxPartecipanti"));
+                corso[5] = String.valueOf(rs.getInt("NumVasca")); // Acquisizione vasca
+                corsi.add(corso);
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore nel recupero dell'elenco corsi: " + e.getMessage());
+        }
+        return corsi;
     }
 
     public java.util.List<String[]> getRecapitiCliente(String cf) throws PiscinaException {
@@ -227,5 +288,62 @@ public class SegreteriaDAO {
             throw new PiscinaException("Errore nell'aggiornamento dell'orario: " + e.getMessage());
         }
     }
+
+    public void disattivaCorso(String nome) throws PiscinaException {
+        String sql = "{call disattiva_corso(?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+            stmt.setString(1, nome);
+            int rowsAffected = stmt.executeUpdate();
+            if (rowsAffected == 0) {
+                throw new PiscinaException("Nessun corso trovato con questo nome.");
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante la disattivazione del corso: " + e.getMessage());
+        }
+    }
+
+    public void aggiungiOrarioCorso(String nomeCorso, String giorno, java.sql.Time inizio, java.sql.Time fine) throws PiscinaException {
+        String sql = "INSERT INTO CalendarioCorso (NomeCorso, GiornoSettimana, OraInizio, OraFine) VALUES (?, ?, ?, ?)";
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, nomeCorso);
+            pstmt.setString(2, giorno);
+            pstmt.setTime(3, inizio);
+            pstmt.setTime(4, fine);
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            // Intercetta il segnale 45000 del trigger
+            if ("45000".equals(e.getSQLState())) {
+                throw new PiscinaException(e.getMessage());
+            }
+            throw new PiscinaException("Errore durante l'inserimento dell'orario: " + e.getMessage());
+        }
+    }
+
+    public java.util.List<String> getOrariDiUnCorso(String nomeCorso) throws PiscinaException {
+        java.util.List<String> orari = new java.util.ArrayList<>();
+        String sql = "SELECT GiornoSettimana, OraInizio, OraFine FROM CalendarioCorso WHERE NomeCorso = ?";
+
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, nomeCorso);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    orari.add(rs.getString("GiornoSettimana") + " | " +
+                            rs.getTime("OraInizio").toString() + " - " +
+                            rs.getTime("OraFine").toString());
+                }
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore nel recupero del calendario: " + e.getMessage());
+        }
+        return orari;
+    }
+
+
 
 }

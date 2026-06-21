@@ -26,6 +26,10 @@ public class PiscinaController {
         dao.iscriviCliente(cf, nomeCorso, dataInizio);
     }
 
+    public void annullaIscrizione(String cf, String nomeCorso) throws PiscinaException {
+        dao.annullaIscrizione(cf, nomeCorso);
+    }
+
     public void registraAccesso(String cf) throws PiscinaException {
         dao.registraAccesso(cf);
     }
@@ -34,8 +38,12 @@ public class PiscinaController {
         dao.generaReportPresenze(dataInizio, dataFine);
     }
 
-    public void aggiungiCorso(String nome, String desc, double costo, int min, int max) throws PiscinaException {
-        dao.aggiungiCorso(nome, desc, costo, min, max);
+    public void aggiungiCorso(String nome, String desc, double costo, int min, int max, int numVasca) throws PiscinaException {
+        dao.aggiungiCorso(nome, desc, costo, min, max, numVasca);
+    }
+
+    public void aggiornaCorso(String nome, String desc, double costo, int min, int max, int numVasca) throws PiscinaException {
+        dao.aggiornaCorso(nome, desc, costo, min, max, numVasca);
     }
 
     public java.util.List<String[]> ottieniRecapitiCliente(String cf) throws PiscinaException {
@@ -58,4 +66,20 @@ public class PiscinaController {
         dao.aggiornaOrario(giorno, apertura, chiusura);
     }
 
+    public void disattivaCorso(String nome) throws PiscinaException {
+        dao.disattivaCorso(nome);
+    }
+
+    public java.util.List<String[]> getCorsiAttivi() throws PiscinaException {
+        return dao.getCorsiAttivi();
+    }
+
+
+    public void aggiungiOrarioCorso(String nomeCorso, String giorno, java.sql.Time inizio, java.sql.Time fine) throws PiscinaException {
+        dao.aggiungiOrarioCorso(nomeCorso, giorno, inizio, fine);
+    }
+
+    public java.util.List<String> getOrariDiUnCorso(String nomeCorso) throws PiscinaException {
+        return dao.getOrariDiUnCorso(nomeCorso);
+    }
 }
