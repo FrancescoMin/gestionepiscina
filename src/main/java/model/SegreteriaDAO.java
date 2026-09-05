@@ -5,6 +5,23 @@ import java.sql.*;
 
 public class SegreteriaDAO {
 
+    public boolean login(String username, String password) throws PiscinaException {
+        String sql = "{call login(?, ?, ?)}";
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            stmt.registerOutParameter(3, java.sql.Types.VARCHAR);
+
+            stmt.execute();
+            String role = stmt.getString(3);
+            return "segretario".equalsIgnoreCase(role);
+
+        } catch (SQLException e) {
+            throw new PiscinaException("Autenticazione fallita: " + e.getMessage());
+        }
+    }
 
     public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
         String sql = "{call registrazione_cliente(?, ?, ?, ?, ?, ?, ?, ?)}";
@@ -46,19 +63,23 @@ public class SegreteriaDAO {
     }
 
     public void modificaRecapito(String cf, String vecchioValore, String nuovoValore, String tipo) throws PiscinaException {
-        String sql = "UPDATE recapito SET Valore = ?, Tipo = ? WHERE CF_Cliente = ? AND Valore = ?";
+        String sql = "{call modifica_recapito(?, ?, ?, ?)}";
+
         try (Connection conn = DBManager.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, nuovoValore);
-            pstmt.setString(2, tipo);
-            pstmt.setString(3, cf);
-            pstmt.setString(4, vecchioValore);
-            int rowsAffected = pstmt.executeUpdate();
-            if (rowsAffected == 0) {
-                throw new PiscinaException("Nessun recapito corrispondente trovato per la modifica.");
-            }
+             CallableStatement cstmt = conn.prepareCall(sql)) {
+
+            cstmt.setString(1, cf);
+            cstmt.setString(2, vecchioValore);
+            cstmt.setString(3, nuovoValore);
+            cstmt.setString(4, tipo.trim().toLowerCase());
+
+            // Esegue la procedura. Se ROW_COUNT() è 0, il DB lancia l'errore
+            // e Java finisce direttamente nel blocco catch qui sotto.
+            cstmt.execute();
+
         } catch (SQLException e) {
-            throw new PiscinaException("Errore durante la modifica del recapito: " + e.getMessage());
+            // Intercetta il SIGNAL lanciato da MySQL
+            throw new PiscinaException(e.getMessage());
         }
     }
 
@@ -92,14 +113,14 @@ public class SegreteriaDAO {
         }
     }
 
-    public void registraAccesso(String cf) throws PiscinaException {
+    public void registraAccesso(String codBadge) throws PiscinaException {
         String sql = "{call registra_accesso(?)}";
         try (Connection conn = DBManager.getConnection();
              CallableStatement stmt = conn.prepareCall(sql)) {
-            stmt.setString(1, cf);
+            stmt.setString(1, codBadge);
             stmt.execute();
         } catch (SQLException e) {
-            throw new PiscinaException("Accesso negato dal sistema: " + e.getMessage());
+            throw new PiscinaException("Accesso negato dal tornello: " + e.getMessage());
         }
     }
 

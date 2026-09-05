@@ -28,29 +28,72 @@ public class MainCLI {
         this.scanner = new Scanner(System.in);
     }
 
+    private boolean segretarioAutenticato = false;
+    private String segretarioLoggato = null;
+
     public void avviaApp() {
         while (true) {
-            System.out.println("\n=== GESTIONALE PISCINA - MENU PRINCIPALE ===");
-            System.out.println("1. 🟦 REGISTRAZIONE ACCESSO (Tornello)");
-            System.out.println("2. 📝 GESTIONE ISCRIZIONI");
-            System.out.println("3. 📊 REPORTISTICA PRESENZE");
-            System.out.println("4. ⚙️  CONFIGURAZIONE (Anagrafica e Corsi)");
+            System.out.println("\n=== SISTEMA INFORMATIVO PISCINA ===");
+            System.out.println("1. 🟦 ACCESSO AL TORNELLO (Scansione Badge)");
+            if (!segretarioAutenticato) {
+                System.out.println("2. 🔐 LOGIN SEGRETERIA (Accesso Area Gestionale)");
+            } else {
+                System.out.println("2. 📝 GESTIONE ISCRIZIONI");
+                System.out.println("3. 📊 REPORTISTICA PRESENZE");
+                System.out.println("4. ⚙️  CONFIGURAZIONE (Anagrafica, Corsi e Orari)");
+                System.out.println("9. 🚪 LOGOUT (" + segretarioLoggato + ")");
+            }
             System.out.println("0. ESCI");
             System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
-            switch (scelta) {
-                case "1": gestisciAccesso(); break;
-                case "2": menuIscrizioni(); break;
-                case "3": generaReportPresenze(); break;
-                case "4": menuConfigurazione(); break;
-                case "0":
-                    System.out.println("Chiusura del gestionale. Arrivederci.");
-                    return;
-                default:
-                    System.out.println(ERR_SCELTA_INVALIDA);
+            if (!segretarioAutenticato) {
+                switch (scelta) {
+                    case "1": gestisciAccesso(); break;
+                    case "2": effettuaLoginSegretario(); break;
+                    case "0":
+                        System.out.println("Chiusura del sistema. Arrivederci.");
+                        return;
+                    default:
+                        System.out.println(ERR_SCELTA_INVALIDA);
+                }
+            } else {
+                switch (scelta) {
+                    case "1": gestisciAccesso(); break;
+                    case "2": menuIscrizioni(); break;
+                    case "3": generaReportPresenze(); break;
+                    case "4": menuConfigurazione(); break;
+                    case "9":
+                        segretarioAutenticato = false;
+                        segretarioLoggato = null;
+                        System.out.println("🔒 Logout effettuato con successo.");
+                        break;
+                    case "0":
+                        System.out.println("Chiusura del sistema. Arrivederci.");
+                        return;
+                    default:
+                        System.out.println(ERR_SCELTA_INVALIDA);
+                }
             }
+        }
+    }
+
+    private void effettuaLoginSegretario() {
+        System.out.println("\n--- AUTENTICAZIONE SEGRETERIA ---");
+        System.out.print("Username: ");
+        String user = scanner.nextLine().trim();
+        System.out.print("Password: ");
+        String pass = scanner.nextLine().trim();
+
+        try {
+            if (controller.login(user, pass)) {
+                this.segretarioAutenticato = true;
+                this.segretarioLoggato = user;
+                System.out.println("✅ Benvenuto, " + user + "! Accesso all'area gestionale autorizzato.");
+            }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
         }
     }
 
@@ -204,14 +247,26 @@ public class MainCLI {
     // ==========================================
 
     private void gestisciAccesso() {
-        System.out.println("\n--- REGISTRAZIONE ACCESSO ---");
-        String cf = leggiCodiceFiscale("Codice Fiscale (16 car): ");
+        System.out.println("\n--- SIMULAZIONE TORNELLO (LETTORE OTTICO BADGE) ---");
+        System.out.print("Scansiona o digita Codice Badge (es. B-0001): ");
+        String badge = scanner.nextLine().trim().toUpperCase();
+
+        if (badge.isEmpty()) {
+            System.out.println("❌ Errore: Nessun badge rilevato dal lettore ottico.");
+            return;
+        }
 
         try {
-            controller.registraAccesso(cf);
-            System.out.println("✅ SUCCESSO: Accesso consentito! Il tornello è sbloccato.");
+            controller.registraAccesso(badge);
+            System.out.println("=================================================");
+            System.out.println("🟢 BEEP! ACCESSO CONSENTITO");
+            System.out.println("Badge valido e iscrizione attiva. Tornello sbloccato.");
+            System.out.println("=================================================");
         } catch (PiscinaException e) {
-            System.out.println("❌ " + e.getMessage());
+            System.out.println("=================================================");
+            System.out.println("🔴 ACCESSO NEGATO!");
+            System.out.println("Causa: " + e.getMessage());
+            System.out.println("=================================================");
         }
     }
 

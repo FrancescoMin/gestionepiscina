@@ -10,6 +10,10 @@ public class PiscinaController {
         this.dao = new SegreteriaDAO();
     }
 
+    public boolean login(String username, String password) throws PiscinaException {
+        return dao.login(username, password);
+    }
+
     public String registraCliente(String cf, String nome, String cognome, java.sql.Date dataNascita, String via, String citta, String cap) throws PiscinaException {
         return dao.registraCliente(cf, nome, cognome, dataNascita, via, citta, cap);
     }
