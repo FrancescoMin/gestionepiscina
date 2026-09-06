@@ -90,4 +90,12 @@ public class PiscinaController {
     public java.util.List<String[]> getPalinsestoCompleto() throws PiscinaException {
         return dao.getPalinsestoCompleto();
     }
+
+    public java.util.List<String[]> getIscrizioniCliente(String cf) throws PiscinaException {
+        return dao.getIscrizioniCliente(cf);
+    }
+
+    public java.util.List<String[]> getAvvisiScadenze() throws PiscinaException {
+        return dao.getAvvisiScadenze();
+    }
 }

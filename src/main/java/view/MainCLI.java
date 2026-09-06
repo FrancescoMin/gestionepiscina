@@ -291,14 +291,18 @@ public class MainCLI {
             System.out.println("\n--- GESTIONE ISCRIZIONI ---");
             System.out.println("1. Iscrivi Cliente a un Corso");
             System.out.println("2. Annulla Iscrizione Esistente (Disdetta)");
+            System.out.println("3. Visualizza Iscrizioni Attive di un Cliente");
+            System.out.println("4. Visualizza Avvisi Scadenze (da Evento Notturno)");
             System.out.println("0. Torna al menu principale");
             System.out.print(PROMPT_SCELTA);
 
             String scelta = scanner.nextLine().trim();
 
             switch (scelta) {
-                case "1": gestisciIscrizione(); break; // Il tuo metodo esistente
-                case "2": annullaIscrizione(); break;  // Il nuovo metodo
+                case "1": gestisciIscrizione(); break;
+                case "2": annullaIscrizione(); break;
+                case "3": visualizzaIscrizioniCliente(); break;
+                case "4": visualizzaAvvisiScadenze(); break;
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -322,6 +326,51 @@ public class MainCLI {
             }
         } else {
             System.out.println("Operazione annullata.");
+        }
+    }
+
+    private void visualizzaIscrizioniCliente() {
+        System.out.println("\n--- ISCRIZIONI ATTIVE CLIENTE ---");
+        String cf = leggiCodiceFiscale(PROMPT_CF_CLIENTE);
+
+        try {
+            List<String[]> iscrizioni = controller.getIscrizioniCliente(cf);
+            if (iscrizioni.isEmpty()) {
+                System.out.println("ℹ️ Nessuna iscrizione attiva trovata per questo cliente.");
+            } else {
+                System.out.println("=========================================================");
+                System.out.printf("%-20s | %-12s | %-12s%n", "Corso", "Data Inizio", "Data Scadenza");
+                System.out.println("---------------------------------------------------------");
+                for (String[] isc : iscrizioni) {
+                    System.out.printf("%-20s | %-12s | %-12s%n", isc[0], isc[1], isc[2]);
+                }
+                System.out.println("=========================================================");
+            }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void visualizzaAvvisiScadenze() {
+        System.out.println("\n=========================================================================================");
+        System.out.println("               CENTRO NOTIFICHE - AVVISI DI SCADENZA (EVENTO SCHEDULATO)                 ");
+        System.out.println("=========================================================================================");
+
+        try {
+            List<String[]> avvisi = controller.getAvvisiScadenze();
+            if (avvisi.isEmpty()) {
+                System.out.println("ℹ️ Nessun avviso di scadenza presente nel sistema.");
+            } else {
+                System.out.printf("%-12s | %-16s | %-15s | %-12s | %s%n", "Data", "Codice Fiscale", "Corso", "Tipo", "Messaggio");
+                System.out.println("-----------------------------------------------------------------------------------------");
+                for (String[] avv : avvisi) {
+                    System.out.printf("%-12s | %-16s | %-15s | %-12s | %s%n",
+                            avv[0], avv[1], avv[2], avv[3], avv[4]);
+                }
+            }
+            System.out.println("=========================================================================================");
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
         }
     }
 

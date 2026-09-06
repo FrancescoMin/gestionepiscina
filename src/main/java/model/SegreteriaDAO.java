@@ -390,5 +390,52 @@ public class SegreteriaDAO {
     }
 
 
+    public java.util.List<String[]> getIscrizioniCliente(String cf) throws PiscinaException {
+        java.util.List<String[]> iscrizioni = new java.util.ArrayList<>();
+        String sql = "{call visualizza_iscrizioni_cliente(?)}";
+
+        try (Connection conn = DBManager.getConnection();
+             CallableStatement stmt = conn.prepareCall(sql)) {
+
+            stmt.setString(1, cf);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String[] riga = new String[3];
+                    riga[0] = rs.getString("NomeCorso");
+                    riga[1] = rs.getDate("DataInizio").toString();
+                    riga[2] = rs.getDate("DataFine").toString();
+                    iscrizioni.add(riga);
+                }
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante il recupero delle iscrizioni: " + e.getMessage());
+        }
+        return iscrizioni;
+    }
+
+    public java.util.List<String[]> getAvvisiScadenze() throws PiscinaException {
+        java.util.List<String[]> avvisi = new java.util.ArrayList<>();
+        String sql = "SELECT DataCreazione, CF_Cliente, NomeCorso, TipoAvviso, Messaggio FROM AvvisoScadenza ORDER BY IDAvviso DESC";
+
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String[] r = new String[5];
+                r[0] = rs.getDate("DataCreazione").toString();
+                r[1] = rs.getString("CF_Cliente");
+                r[2] = rs.getString("NomeCorso");
+                r[3] = rs.getString("TipoAvviso");
+                r[4] = rs.getString("Messaggio");
+                avvisi.add(r);
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore durante il recupero degli avvisi: " + e.getMessage());
+        }
+        return avvisi;
+    }
+
 
 }
