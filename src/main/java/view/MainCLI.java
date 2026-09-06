@@ -122,10 +122,10 @@ public class MainCLI {
         while (true) {
             System.out.println("\n--- GESTIONE ANAGRAFICA CLIENTI ---");
             System.out.println("1. Registra Nuovo Cliente");
-            System.out.println("2. Modifica Dati Residenza Cliente"); // NUOVO
+            System.out.println("2. Modifica Dati Residenza Cliente");
             System.out.println("3. Aggiungi Recapito a Cliente Esistente");
             System.out.println("4. Modifica Recapito Esistente");
-            System.out.println("5. Disattiva Cliente (Eliminazione)"); // NUOVO
+            System.out.println("5. Disattiva Cliente (Eliminazione)");
             System.out.println("0. Torna indietro");
             System.out.print(PROMPT_SCELTA);
 
@@ -133,10 +133,10 @@ public class MainCLI {
 
             switch (scelta) {
                 case "1": registraNuovoCliente(); break;
-                case "2": modificaDatiCliente(); break; // NUOVO
+                case "2": modificaDatiCliente(); break;
                 case "3": aggiungiRecapitoAggiuntivo(); break;
                 case "4": proceduraModificaRecapito(); break;
-                case "5": disattivaCliente(); break; // NUOVO
+                case "5": disattivaCliente(); break;
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -151,6 +151,7 @@ public class MainCLI {
             System.out.println("3. Modifica Dati Corso Esistente");
             System.out.println("4. Sospendi/Elimina Corso");
             System.out.println("5. Gestisci Calendario di un Corso");
+            System.out.println("6. Visualizza Palinsesto Settimanale (da Vista SQL)");
             System.out.println("0. Torna indietro");
             System.out.print(PROMPT_SCELTA);
 
@@ -162,6 +163,7 @@ public class MainCLI {
                 case "3": proceduraModificaCorso(); break;
                 case "4": disattivaCorso(); break;
                 case "5": gestisciCalendarioCorso(); break;
+                case "6": visualizzaPalinsesto(); break;
                 case "0": return;
                 default: System.out.println(ERR_SCELTA_INVALIDA);
             }
@@ -563,6 +565,31 @@ public class MainCLI {
                 }
                 System.out.println(); // Riga vuota di spaziatura tra un corso e l'altro
             }
+        } catch (PiscinaException e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private void visualizzaPalinsesto() {
+        try {
+            List<String[]> palinsesto = controller.getPalinsestoCompleto();
+            System.out.println("\n=========================================================================================");
+            System.out.println("                   PALINSESTO SETTIMANALE CORSI (VISTA SQL)                              ");
+            System.out.println("=========================================================================================");
+            System.out.printf("%-12s | %-13s | %-20s | %-7s | %-10s | %-8s%n",
+                    "Giorno", "Orario", "Corso", "Vasca", "Capienza", "Costo");
+            System.out.println("-----------------------------------------------------------------------------------------");
+
+            if (palinsesto.isEmpty()) {
+                System.out.println("Nessun orario presente nel palinsesto.");
+            } else {
+                for (String[] r : palinsesto) {
+                    String orario = r[1] + " - " + r[2];
+                    System.out.printf("%-12s | %-13s | %-20s | Vasca %-1s | %-10s | €%-7s%n",
+                            r[0], orario, r[3], r[4], r[5] + " posti", r[6]);
+                }
+            }
+            System.out.println("=========================================================================================");
         } catch (PiscinaException e) {
             System.out.println("❌ " + e.getMessage());
         }

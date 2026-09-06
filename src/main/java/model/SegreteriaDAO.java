@@ -364,6 +364,30 @@ public class SegreteriaDAO {
         }
         return orari;
     }
+    public java.util.List<String[]> getPalinsestoCompleto() throws PiscinaException {
+        java.util.List<String[]> righe = new java.util.ArrayList<>();
+        String sql = "SELECT GiornoSettimana, OraInizio, OraFine, NomeCorso, NumVasca, CapienzaVasca, CostoMensile FROM view_palinsesto_corsi";
+
+        try (Connection conn = DBManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql);
+             ResultSet rs = pstmt.executeQuery()) {
+
+            while (rs.next()) {
+                String[] r = new String[7];
+                r[0] = rs.getString("GiornoSettimana");
+                r[1] = rs.getTime("OraInizio").toString().substring(0, 5);
+                r[2] = rs.getTime("OraFine").toString().substring(0, 5);
+                r[3] = rs.getString("NomeCorso");
+                r[4] = String.valueOf(rs.getInt("NumVasca"));
+                r[5] = String.valueOf(rs.getInt("CapienzaVasca"));
+                r[6] = String.valueOf(rs.getDouble("CostoMensile"));
+                righe.add(r);
+            }
+        } catch (SQLException e) {
+            throw new PiscinaException("Errore consultazione palinsesto: " + e.getMessage());
+        }
+        return righe;
+    }
 
 
 

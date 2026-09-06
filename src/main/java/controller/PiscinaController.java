@@ -86,4 +86,8 @@ public class PiscinaController {
     public java.util.List<String> getOrariDiUnCorso(String nomeCorso) throws PiscinaException {
         return dao.getOrariDiUnCorso(nomeCorso);
     }
+
+    public java.util.List<String[]> getPalinsestoCompleto() throws PiscinaException {
+        return dao.getPalinsestoCompleto();
+    }
 }
